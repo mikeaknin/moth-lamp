@@ -23,9 +23,10 @@ export function createGame(parent: HTMLElement, settings: GameSettings): Phaser.
       noAudio: false,
     },
     scale: {
-      // Fill the screen hard (covers letterbox waste on phones).
-      // pixelArt + roundPixels keep nearest-neighbor crisp — not blurry upscale.
-      mode: Phaser.Scale.ENVELOP,
+      // FIT = entire 320×180 playfield always visible (no crop).
+      // ENVELOP was cropping phones to a "window into desktop" — wrong for mobile.
+      // Letterbox bars are intentional; pixelArt keeps nearest-neighbor crisp.
+      mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
       width: GAME.width,
       height: GAME.height,

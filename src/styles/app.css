@@ -79,7 +79,7 @@ select {
   opacity: 0.45;
 }
 
-/* ─── Game fills the entire viewport ─── */
+/* ─── Game stage: full viewport, letterboxed 16:9 playfield ─── */
 .game-stage {
   position: absolute;
   inset: 0;
@@ -87,22 +87,42 @@ select {
   height: 100%;
   margin: 0;
   padding: 0;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
   background: #05030e;
 }
 
-/* Host is full-bleed — Phaser scales the 16:9 canvas inside it */
-.phaser-host {
+/*
+ * Viewport host for Phaser FIT mode.
+ * Canvas is the full game (320×180); FIT scales it to fit without crop.
+ * Side/top bars are intentional letterbox — not a zoomed desktop window.
+ */
+.game-viewport {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse at center, #120c28 0%, #05030e 70%),
+    #05030e;
+}
+
+.phaser-host {
+  position: relative !important;
   width: 100% !important;
   height: 100% !important;
-  max-width: none !important;
-  max-height: none !important;
-  aspect-ratio: unset !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
 }
 
 .phaser-host canvas,
@@ -114,6 +134,19 @@ select {
   box-shadow: none !important;
   display: block;
   outline: none;
+  /* Phaser FIT sets size; never force full crop */
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* Soft letterbox bars feel intentional on phones */
+.app-shell.is-mobile .game-viewport::before {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  box-shadow: inset 0 0 0 2px rgba(110, 198, 255, 0.12);
 }
 
 /* ─── NES HUD ─── */
@@ -151,6 +184,45 @@ select {
   letter-spacing: 0.02em;
   text-shadow: 1px 1px 0 #000;
   image-rendering: pixelated;
+}
+
+/* Phone HUD — readable without covering the whole screen */
+.hud-mobile {
+  padding-right: calc(56px + var(--safe-right));
+}
+
+.hud-mobile .hud-strip {
+  min-height: 34px;
+  gap: 6px;
+  padding: 6px 8px;
+  font-size: 9px;
+}
+
+.hud-mobile .hud-heart {
+  width: 12px;
+  height: 12px;
+}
+
+.hud-mobile .hud-meter-track {
+  height: 10px;
+}
+
+.hud-mobile .hud-score-num {
+  font-size: 11px;
+}
+
+.hud-mobile .hud-meter {
+  max-width: 100px;
+}
+
+.hud-mobile .hud-meter.dash {
+  flex: 0 0 48px;
+  max-width: 48px;
+}
+
+.hud-mobile .hud-meter-icon {
+  font-size: 6px;
+  letter-spacing: -0.04em;
 }
 
 .hud-hearts {
@@ -334,7 +406,7 @@ select {
   color: #ea80fc;
 }
 
-/* ─── Touch: edge chrome, translucent, not a wall of UI ─── */
+/* ─── Mobile touch chrome (designed for thumbs, not desktop overlay) ─── */
 .touch-controls {
   position: absolute;
   inset: 0;
@@ -342,33 +414,58 @@ select {
   pointer-events: none;
 }
 
-.touch-zone {
+.touch-controls-mobile .touch-zone {
   pointer-events: auto;
   position: absolute;
-  bottom: calc(10px + var(--safe-bottom));
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
-.stick-zone,
-.stick-zone-lg {
-  left: calc(10px + var(--safe-left));
-  width: 112px;
-  height: 112px;
+/* Default: landscape phone layout */
+.touch-controls-mobile .stick-zone {
+  left: calc(12px + var(--safe-left));
+  bottom: calc(14px + var(--safe-bottom));
+  width: min(132px, 34vw);
+  height: min(132px, 34vw);
+  min-width: 100px;
+  min-height: 100px;
   border-radius: 0;
-  background: rgba(10, 6, 24, 0.55);
+  background: rgba(10, 6, 24, 0.72);
   border: 3px solid #6ec6ff;
   box-shadow:
     0 0 0 2px #05030e,
+    3px 3px 0 #000,
     inset 0 0 0 1px #1a1440;
-  touch-action: none;
-  opacity: 0.9;
-  image-rendering: pixelated;
+  opacity: 0.95;
 }
 
-.stick-knob,
-.stick-knob-lg {
+.touch-controls-mobile.left-handed .stick-zone {
+  left: auto;
+  right: calc(12px + var(--safe-right));
+}
+
+.stick-label {
   position: absolute;
-  width: 40px;
-  height: 40px;
+  top: 6px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 7px;
+  color: #6ec6ff;
+  text-shadow: 1px 1px 0 #000;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.stick-knob {
+  position: absolute;
+  width: 42%;
+  height: 42%;
+  max-width: 52px;
+  max-height: 52px;
+  min-width: 36px;
+  min-height: 36px;
   border-radius: 0;
   background: #fff176;
   border: 3px solid #ff8f00;
@@ -379,33 +476,46 @@ select {
   image-rendering: pixelated;
 }
 
-.action-zone {
-  right: calc(10px + var(--safe-right));
+.touch-controls-mobile .action-zone {
+  right: calc(12px + var(--safe-right));
+  bottom: calc(14px + var(--safe-bottom));
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   align-items: flex-end;
+}
+
+.touch-controls-mobile.left-handed .action-zone {
+  right: auto;
+  left: calc(12px + var(--safe-left));
+  align-items: flex-start;
 }
 
 .action-btn {
   pointer-events: auto;
-  width: 64px;
-  height: 64px;
+  width: min(76px, 20vw);
+  height: min(76px, 20vw);
+  min-width: 64px;
+  min-height: 64px;
   border-radius: 0;
   border: 3px solid #ffca28;
-  background: #1a1040;
+  background: rgba(26, 16, 64, 0.88);
   color: #fff176;
-  font-family: 'Press Start 2P', monospace;
-  font-weight: 400;
-  font-size: 8px;
-  letter-spacing: 0.04em;
   touch-action: none;
-  opacity: 0.95;
+  opacity: 0.96;
   box-shadow:
     0 0 0 2px #05030e,
     3px 3px 0 #000;
-  text-shadow: 1px 1px 0 #000;
-  image-rendering: pixelated;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.action-btn-label {
+  font-size: clamp(8px, 2.4vw, 10px);
+  text-shadow: 2px 2px 0 #000;
+  line-height: 1.2;
 }
 
 .action-btn:active {
@@ -416,37 +526,84 @@ select {
 }
 
 .action-btn.dash {
-  width: 52px;
-  height: 52px;
+  width: min(64px, 17vw);
+  height: min(64px, 17vw);
+  min-width: 56px;
+  min-height: 56px;
   border-color: #18ffff;
   color: #18ffff;
-  background: #0a2030;
+  background: rgba(10, 32, 48, 0.9);
+}
+
+.action-btn.dash .action-btn-label {
+  color: #18ffff;
 }
 
 .pause-fab {
   pointer-events: auto;
   position: absolute;
-  top: calc(6px + var(--safe-top));
-  right: calc(6px + var(--safe-right));
-  min-width: 40px;
-  min-height: 40px;
-  width: 40px;
-  height: 40px;
+  top: calc(8px + var(--safe-top));
+  right: calc(8px + var(--safe-right));
+  min-width: 48px;
+  min-height: 48px;
+  width: 48px;
+  height: 48px;
   border-radius: 0;
-  border: 2px solid #6ec6ff;
-  background: #0a0618;
+  border: 3px solid #6ec6ff;
+  background: rgba(10, 6, 24, 0.9);
   color: #6ec6ff;
-  font-family: 'Press Start 2P', monospace;
-  font-weight: 400;
-  font-size: 10px;
+  font-size: 12px;
   z-index: 16;
-  opacity: 0.95;
   box-shadow: 2px 2px 0 #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* Subtle tip — only portrait, tiny, doesn't steal play space */
+/* Portrait: stack controls lower, keep game readable */
+.app-shell.is-portrait.is-mobile .touch-controls-mobile .stick-zone {
+  width: min(120px, 38vw);
+  height: min(120px, 38vw);
+  bottom: calc(18px + var(--safe-bottom));
+}
+
+.app-shell.is-portrait.is-mobile .action-btn {
+  min-width: 68px;
+  min-height: 68px;
+}
+
 .rotate-hint {
   display: none;
+  pointer-events: none;
+  position: absolute;
+  top: calc(44px + var(--safe-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 14;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  background: rgba(10, 6, 24, 0.88);
+  border: 2px solid #fff176;
+  box-shadow: 2px 2px 0 #000;
+  color: #fff176;
+  font-size: 7px;
+  text-align: center;
+  text-shadow: 1px 1px 0 #000;
+  max-width: 90vw;
+}
+
+.rotate-hint span {
+  display: block;
+  color: #9e9eb8;
+  font-size: 6px;
+  margin-top: 2px;
+}
+
+.app-shell.is-portrait.is-mobile.is-playing .rotate-hint {
+  display: flex;
+  animation: press-blink 2s steps(1) infinite;
 }
 
 /* ─── Menus (only when not playing) ─── */
@@ -1391,31 +1548,94 @@ select {
   font-size: 0.85rem;
 }
 
-/* Landscape phones: slightly larger stick, keep HUD slim */
+/* Landscape phones: roomy thumbs, slim HUD */
 @media (orientation: landscape) and (max-height: 500px) {
   .hud {
     padding-top: calc(2px + var(--safe-top));
   }
 
-  .hud-strip {
-    min-height: 24px;
-    padding: 2px 8px;
+  .hud-mobile .hud-strip {
+    min-height: 28px;
+    padding: 4px 8px;
+    font-size: 8px;
   }
 
-  .stick-zone,
-  .stick-zone-lg {
-    width: 100px;
-    height: 100px;
-    bottom: calc(6px + var(--safe-bottom));
+  .touch-controls-mobile .stick-zone {
+    width: min(118px, 28vh);
+    height: min(118px, 28vh);
+    bottom: calc(8px + var(--safe-bottom));
   }
 
   .action-btn {
-    width: 56px;
-    height: 56px;
+    min-width: 60px;
+    min-height: 60px;
+    width: min(68px, 16vh);
+    height: min(68px, 16vh);
   }
 
   .action-btn.dash {
-    width: 48px;
-    height: 48px;
+    min-width: 52px;
+    min-height: 52px;
+  }
+
+  .rotate-hint {
+    display: none !important;
+  }
+
+  .pause-fab {
+    top: calc(4px + var(--safe-top));
+    min-width: 44px;
+    min-height: 44px;
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* Portrait phones: menus + intro use full width */
+@media (max-width: 600px) {
+  .nes-box,
+  .panel {
+    width: min(100%, 100vw - 24px);
+    max-height: min(88dvh, 100%);
+    padding: 20px 12px 12px;
+  }
+
+  .nes-box-title-inner {
+    font-size: 9px;
+    padding: 4px 8px;
+  }
+
+  .nes-btn,
+  .btn {
+    min-height: 52px;
+    font-size: 9px;
+  }
+
+  .intro-logo {
+    width: min(92vw, 340px);
+  }
+
+  .intro-center {
+    gap: 10px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .intro-menu {
+    min-width: min(300px, 92vw);
+  }
+
+  .intro-menu-item {
+    min-height: 48px;
+    font-size: 10px;
+  }
+
+  .press-start {
+    font-size: 14px;
+    min-height: 56px;
+  }
+
+  .intro-footer {
+    font-size: 6px;
   }
 }

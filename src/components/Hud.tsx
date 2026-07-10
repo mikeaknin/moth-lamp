@@ -3,12 +3,14 @@ import type { HudSnapshot } from '../game/data/types';
 interface Props {
   hud: HudSnapshot | null;
   visible: boolean;
+  mobile?: boolean;
 }
 
 /**
  * Compact in-game HUD — one thin strip so the playfield stays dominant.
+ * On mobile, larger NES type + clearer meters.
  */
-export function Hud({ hud, visible }: Props) {
+export function Hud({ hud, visible, mobile = false }: Props) {
   if (!visible || !hud || hud.outcome !== 'playing') return null;
 
   const lampPct = Math.max(0, Math.min(100, (hud.lampLife / hud.maxLampLife) * 100));
@@ -16,7 +18,11 @@ export function Hud({ hud, visible }: Props) {
   const lampCritical = hud.lampLife <= 15;
 
   return (
-    <div className="hud hud-compact" role="status" aria-live="polite">
+    <div
+      className={`hud hud-compact${mobile ? ' hud-mobile' : ''}`}
+      role="status"
+      aria-live="polite"
+    >
       <div className="hud-strip">
         {/* Hearts */}
         <div className="hud-hearts" aria-label={`Health ${hud.hp} of ${hud.maxHp}`}>
@@ -31,7 +37,7 @@ export function Hud({ hud, visible }: Props) {
           aria-label={`Lamp life ${Math.round(hud.lampLife)}`}
         >
           <span className="hud-meter-icon" aria-hidden>
-            💡
+            LMP
           </span>
           <div className="hud-meter-track">
             <span style={{ width: `${lampPct}%` }} />
@@ -47,7 +53,7 @@ export function Hud({ hud, visible }: Props) {
         {/* Dash pip */}
         <div className="hud-meter dash" aria-label="Dash cooldown">
           <span className="hud-meter-icon" aria-hidden>
-            ⇢
+            DSH
           </span>
           <div className="hud-meter-track thin">
             <span style={{ width: `${dashPct}%` }} />

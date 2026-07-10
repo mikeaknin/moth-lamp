@@ -8,7 +8,8 @@ interface Props {
 }
 
 /**
- * Larger virtual stick with soft response curve for moth-like flight on mobile.
+ * Mobile-first virtual controls — big targets, safe-area aware, always on-device.
+ * Stick left (or right if left-handed), FIRE + DASH opposite, pause top-right.
  */
 export function TouchControls({ leftHanded = false, visible }: Props) {
   const zoneRef = useRef<HTMLDivElement>(null);
@@ -21,7 +22,6 @@ export function TouchControls({ leftHanded = false, visible }: Props) {
     const rect = el.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
-    // Use slightly larger effective radius so edges are easy to hit
     const radius = Math.min(rect.width, rect.height) * 0.48;
     let dx = (clientX - cx) / radius;
     let dy = (clientY - cy) / radius;
@@ -35,11 +35,12 @@ export function TouchControls({ leftHanded = false, visible }: Props) {
       dx /= mag;
       dy /= mag;
     }
-    // Soft curve: more control near center
     const curved = Math.pow(Math.min(1, mag), PLAYER.inputCurve);
     const nx = (dx / (mag || 1)) * curved;
     const ny = (dy / (mag || 1)) * curved;
-    setKnob({ x: nx * 36, y: ny * 36 });
+    // Knob travel ~38% of pad so it stays inside the NES frame
+    const travel = Math.min(rect.width, rect.height) * 0.32;
+    setKnob({ x: nx * travel, y: ny * travel });
     gameBridge.setTouch({ vecX: nx, vecY: ny });
   }, []);
 
@@ -51,19 +52,13 @@ export function TouchControls({ leftHanded = false, visible }: Props) {
 
   if (!visible) return null;
 
-  const stickStyle = leftHanded
-    ? { right: 'calc(16px + var(--safe-right))', left: 'auto' }
-    : undefined;
-  const actionStyle = leftHanded
-    ? { left: 'calc(16px + var(--safe-left))', right: 'auto', alignItems: 'flex-start' as const }
-    : undefined;
+  const side = leftHanded ? 'left-handed' : 'right-handed';
 
   return (
-    <div className="touch-controls" aria-hidden={!visible}>
+    <div className={`touch-controls touch-controls-mobile ${side}`} aria-hidden={!visible}>
       <div
         ref={zoneRef}
-        className="touch-zone stick-zone stick-zone-lg"
-        style={stickStyle}
+        className="touch-zone stick-zone"
         onTouchStart={(e) => {
           e.preventDefault();
           const t = e.changedTouches[0];
@@ -85,18 +80,19 @@ export function TouchControls({ leftHanded = false, visible }: Props) {
         }}
         onTouchCancel={endStick}
       >
+        <span className="stick-label pixel-text">MOVE</span>
         <div
-          className="stick-knob stick-knob-lg"
+          className="stick-knob"
           style={{
             transform: `translate(calc(-50% + ${knob.x}px), calc(-50% + ${knob.y}px))`,
           }}
         />
       </div>
 
-      <div className="touch-zone action-zone" style={actionStyle}>
+      <div className="touch-zone action-zone">
         <button
           type="button"
-          className="action-btn"
+          className="action-btn fire"
           aria-label="Fire"
           onTouchStart={(e) => {
             e.preventDefault();
@@ -106,11 +102,12 @@ export function TouchControls({ leftHanded = false, visible }: Props) {
             e.preventDefault();
             gameBridge.setTouch({ fire: false });
           }}
+          onTouchCancel={() => gameBridge.setTouch({ fire: false })}
           onMouseDown={() => gameBridge.setTouch({ fire: true })}
           onMouseUp={() => gameBridge.setTouch({ fire: false })}
           onMouseLeave={() => gameBridge.setTouch({ fire: false })}
         >
-          FIRE
+          <span className="action-btn-label pixel-text">FIRE</span>
         </button>
         <button
           type="button"
@@ -120,14 +117,18 @@ export function TouchControls({ leftHanded = false, visible }: Props) {
             e.preventDefault();
             gameBridge.setTouch({ dash: true });
           }}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            gameBridge.setTouch({ dash: false });
+          }}
         >
-          DASH
+          <span className="action-btn-label pixel-text">DASH</span>
         </button>
       </div>
 
       <button
         type="button"
-        className="pause-fab"
+        className="pause-fab pixel-text"
         aria-label="Pause"
         onClick={() => gameBridge.pause()}
       >

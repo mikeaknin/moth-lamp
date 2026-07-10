@@ -28,17 +28,33 @@ import '../styles/app.css';
 
 const queryClient = new QueryClient();
 
-function useIsCoarsePointer(): boolean {
-  const [coarse, setCoarse] = useState(() =>
-    typeof window !== 'undefined' ? window.matchMedia('(pointer: coarse)').matches : false,
-  );
+/** True on phones/tablets — not just coarse pointer (desktop + mouse can be coarse). */
+function useIsMobilePlay(): boolean {
+  const [mobile, setMobile] = useState(() => detectMobilePlay());
   useEffect(() => {
-    const mq = window.matchMedia('(pointer: coarse)');
-    const fn = () => setCoarse(mq.matches);
-    mq.addEventListener('change', fn);
-    return () => mq.removeEventListener('change', fn);
+    const update = () => setMobile(detectMobilePlay());
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
+    const mq = window.matchMedia('(pointer: coarse), (hover: none), (max-width: 900px)');
+    mq.addEventListener?.('change', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('orientationchange', update);
+      mq.removeEventListener?.('change', update);
+    };
   }, []);
-  return coarse;
+  return mobile;
+}
+
+function detectMobilePlay(): boolean {
+  if (typeof window === 'undefined') return false;
+  const coarse = window.matchMedia('(pointer: coarse)').matches;
+  const noHover = window.matchMedia('(hover: none)').matches;
+  const narrow = window.matchMedia('(max-width: 900px)').matches;
+  const touch = 'ontouchstart' in window || (navigator.maxTouchPoints ?? 0) > 0;
+  // Prefer touch UI whenever the device can touch and isn't a wide desktop
+  return coarse || noHover || (touch && narrow) || (touch && window.innerHeight < 500);
 }
 
 function AppInner() {
@@ -50,7 +66,23 @@ function AppInner() {
   const [lastOutcome, setLastOutcome] = useState<string | null>(null);
   const [loadProgress, setLoadProgress] = useState(8);
   const [gameReady, setGameReady] = useState(false);
-  const coarse = useIsCoarsePointer();
+  const mobilePlay = useIsMobilePlay();
+  const [portrait, setPortrait] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(orientation: portrait)').matches,
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia('(orientation: portrait)');
+    const fn = () => setPortrait(mq.matches);
+    mq.addEventListener?.('change', fn);
+    window.addEventListener('orientationchange', fn);
+    window.addEventListener('resize', fn);
+    return () => {
+      mq.removeEventListener?.('change', fn);
+      window.removeEventListener('orientationchange', fn);
+      window.removeEventListener('resize', fn);
+    };
+  }, []);
 
   // Fake smooth loading bar until Phaser ready
   useEffect(() => {
@@ -136,22 +168,33 @@ function AppInner() {
   }, [hud?.paused, screen]);
 
   const showTouch = useMemo(
-    () => coarse && (screen === 'playing' || screen === 'paused'),
-    [coarse, screen],
+    () => mobilePlay && (screen === 'playing' || screen === 'paused'),
+    [mobilePlay, screen],
   );
 
   const immersive = screen === 'playing' || screen === 'paused';
 
   return (
-    <div className={`app-shell ${immersive ? 'is-playing' : ''}`}>
+    <div
+      className={`app-shell ${immersive ? 'is-playing' : ''}${mobilePlay ? ' is-mobile' : ''}${portrait ? ' is-portrait' : ' is-landscape'}`}
+    >
       {settings.crtFilter && <div className="crt-overlay" aria-hidden />}
       <div className="game-stage">
-        <GameCanvas settings={settings} onReady={() => setGameReady(true)} />
-        <Hud hud={hud} visible={immersive} />
+        {/* Letterbox stage: full 16:9 playfield, never a cropped desktop window */}
+        <div className="game-viewport">
+          <GameCanvas settings={settings} onReady={() => setGameReady(true)} />
+        </div>
+        <Hud hud={hud} visible={immersive} mobile={mobilePlay} />
         <TouchControls
           visible={showTouch && screen === 'playing'}
           leftHanded={settings.touchLeftHanded}
         />
+        {immersive && portrait && mobilePlay && (
+          <div className="rotate-hint pixel-text" role="status">
+            ROTATE FOR BEST PLAY
+            <span>PORTRAIT WORKS · LANDSCAPE IS EASIER</span>
+          </div>
+        )}
       </div>
       <Screens
         screen={screen}
