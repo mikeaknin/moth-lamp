@@ -203,6 +203,63 @@ export const HECKLER_BUBBLES = [
   'MID',
 ] as const;
 
+export type BossId = 'briar' | 'neon' | 'tyrant';
+
+export interface StageBossDef {
+  id: BossId;
+  /** Elapsed seconds when this boss appears (after prior stage waves) */
+  t: number;
+  displayName: string;
+  banner: string;
+  section: SectionId;
+  /** True = defeating wins the run */
+  final: boolean;
+  hp: number;
+  /** Texture prefix: boss_briar_0, boss_neon_0, boss_tyrant_0 */
+  tex: string;
+  score: number;
+}
+
+/**
+ * Three real stage bosses — one at the end of each zone.
+ * Not a continuous filler fight; discrete NES-style bosses.
+ */
+export const STAGE_BOSSES: StageBossDef[] = [
+  {
+    id: 'briar',
+    t: 66,
+    displayName: 'Briar Colossus',
+    banner: 'BOSS 1 — BRIAR COLOSSUS',
+    section: 'backyard',
+    final: false,
+    hp: 55,
+    tex: 'boss_briar',
+    score: 2000,
+  },
+  {
+    id: 'neon',
+    t: 148,
+    displayName: 'Neon Overlord',
+    banner: 'BOSS 2 — NEON OVERLORD',
+    section: 'alley',
+    final: false,
+    hp: 80,
+    tex: 'boss_neon',
+    score: 3500,
+  },
+  {
+    id: 'tyrant',
+    t: 210,
+    displayName: 'Porchlight Tyrant',
+    banner: 'FINAL BOSS — PORCHLIGHT TYRANT',
+    section: 'boss',
+    final: true,
+    hp: 130,
+    tex: 'boss_tyrant',
+    score: 5000,
+  },
+];
+
 export const BOSS = {
   phases: [
     {
@@ -230,8 +287,7 @@ export const BOSS = {
       moveAmp: 54,
     },
   ],
-  introHoldMs: 1600,
+  introHoldMs: 1400,
   vulnerableAfterTelegraphMs: 380,
-  /** Extra HP so the fight lasts and phases read clearly */
-  hpBonus: 20,
+  hpBonus: 0,
 };

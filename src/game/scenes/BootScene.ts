@@ -33,7 +33,12 @@ export class BootScene extends Phaser.Scene {
       this.load.image(`enemy_${e}_1`, `enemy_${e}_1.png`);
     }
 
-    for (let i = 0; i < 3; i++) this.load.image(`boss_${i}`, `boss_${i}.png`);
+    // Three stage bosses × 3 anim frames (hand-authored NES)
+    for (const id of ['briar', 'neon', 'tyrant'] as const) {
+      for (let i = 0; i < 3; i++) this.load.image(`boss_${id}_${i}`, `boss_${id}_${i}.png`);
+    }
+    // Legacy keys → tyrant (fallback for any old refs)
+    for (let i = 0; i < 3; i++) this.load.image(`boss_${i}`, `boss_tyrant_${i}.png`);
     for (let i = 0; i < 5; i++) this.load.image(`boom_${i}`, `boom_${i}.png`);
 
     this.load.image('bullet_player', 'bullet_player.png');

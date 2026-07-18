@@ -23,13 +23,21 @@ function NesBox({
   title,
   children,
   wide,
+  variant = 'default',
 }: {
   title: string;
   children: ReactNode;
   wide?: boolean;
+  /** gameover / victory get stronger framed plates */
+  variant?: 'default' | 'gameover' | 'victory' | 'pause';
 }) {
   return (
-    <div className={`nes-box${wide ? ' nes-box-wide' : ''}`}>
+    <div
+      className={`nes-box${wide ? ' nes-box-wide' : ''} nes-box-${variant}`}
+      role="dialog"
+      aria-label={title}
+    >
+      <div className="nes-box-frame" aria-hidden />
       <div className="nes-box-title pixel-text">
         <span className="nes-box-title-inner">{title}</span>
       </div>
@@ -466,7 +474,7 @@ function Profile(props: ScreenProps) {
 
 function Paused(props: ScreenProps) {
   return (
-    <NesBox title="PAUSED">
+    <NesBox title="PAUSED" variant="pause">
       <p className="nes-text dim">LAMP STILL BURNING…</p>
       <NesBtn variant="accent" testId="btn-resume" onClick={props.onResume}>
         ▶ RESUME
@@ -487,54 +495,64 @@ function Results(props: ScreenProps & { won: boolean }) {
     : 'MOTH//LAMP';
 
   return (
-    <NesBox title={props.won ? 'STAGE CLEAR!' : 'GAME OVER'}>
-      <p className="nes-banner pixel-text">{props.won ? 'LAMP SECURED!' : "LIGHT'S OUT…"}</p>
+    <NesBox
+      title={props.won ? 'STAGE CLEAR!' : 'GAME OVER'}
+      variant={props.won ? 'victory' : 'gameover'}
+    >
+      <p className={`nes-banner pixel-text${props.won ? ' win' : ' lose'}`}>
+        {props.won ? 'LAMP SECURED!' : "LIGHT'S OUT…"}
+      </p>
       {stats && (
         <div className="nes-stats">
           <div className="nes-medal pixel-text" aria-label={`Medal ${stats.medal}`}>
             ★ {stats.medal} ★
           </div>
-          <div className="nes-stat-row pixel-text">
-            <span>SCORE</span>
-            <span>{stats.score}</span>
-          </div>
-          <div className="nes-stat-row pixel-text">
-            <span>TIME</span>
-            <span>{stats.completionTimeSec}S</span>
-          </div>
-          <div className="nes-stat-row pixel-text">
-            <span>ENEMIES</span>
-            <span>{stats.enemiesDestroyed}</span>
-          </div>
-          <div className="nes-stat-row pixel-text">
-            <span>COMBO</span>
-            <span>X{stats.maxCombo}</span>
-          </div>
-          <div className="nes-stat-row pixel-text">
-            <span>LAMP</span>
-            <span>{Math.round(stats.lampRemaining)}</span>
-          </div>
-          <div className="nes-stat-row pixel-text">
-            <span>DMG</span>
-            <span>{stats.damageTaken}</span>
+          <div className="nes-stat-grid">
+            <div className="nes-stat-row pixel-text">
+              <span>SCORE</span>
+              <span>{stats.score}</span>
+            </div>
+            <div className="nes-stat-row pixel-text">
+              <span>TIME</span>
+              <span>{stats.completionTimeSec}S</span>
+            </div>
+            <div className="nes-stat-row pixel-text">
+              <span>ENEMIES</span>
+              <span>{stats.enemiesDestroyed}</span>
+            </div>
+            <div className="nes-stat-row pixel-text">
+              <span>COMBO</span>
+              <span>X{stats.maxCombo}</span>
+            </div>
+            <div className="nes-stat-row pixel-text">
+              <span>LAMP</span>
+              <span>{Math.round(stats.lampRemaining)}</span>
+            </div>
+            <div className="nes-stat-row pixel-text">
+              <span>DMG</span>
+              <span>{stats.damageTaken}</span>
+            </div>
           </div>
         </div>
       )}
-      <NesBtn
-        onClick={async () => {
-          try {
-            await navigator.clipboard.writeText(share);
-          } catch {
-            // ignore
-          }
-        }}
-      >
-        COPY SCORE
-      </NesBtn>
-      <NesBtn variant="accent" testId="btn-restart" onClick={props.onRestart}>
-        ▶ PLAY AGAIN
-      </NesBtn>
-      <NesBtn onClick={props.onQuit}>◀ TITLE</NesBtn>
+      <div className="nes-btn-row">
+        <NesBtn variant="accent" testId="btn-restart" onClick={props.onRestart}>
+          ▶ PLAY AGAIN
+        </NesBtn>
+        <NesBtn onClick={props.onQuit}>◀ TITLE</NesBtn>
+        <NesBtn
+          variant="ghost"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(share);
+            } catch {
+              // ignore
+            }
+          }}
+        >
+          COPY SCORE
+        </NesBtn>
+      </div>
     </NesBox>
   );
 }

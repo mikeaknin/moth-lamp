@@ -35,12 +35,15 @@ Energetic, funny, stylish, slightly chaotic, self-aware. Fiction-only enemies (H
 
 ## Level flow (~3.5–4.5 min typical)
 
-| Section | Time (s) | Feel |
-|---------|----------|------|
-| Moonlit Backyard | 0–70 | Generous intro, teach patterns |
-| Neon Alley | 70–150 | Neon hazards, denser ranged |
-| Final Porch | 150–210 | Priority leeches, pressure |
-| Boss | 210+ | Three readable phases |
+One continuous campaign run with **3 zones** and a **real NES boss at the end of each zone**.
+
+| Section | Time (s) | End boss |
+|---------|----------|----------|
+| Moonlit Backyard | 0–66 | **Briar Colossus** (mid-boss) |
+| Neon Alley | 66–148 | **Neon Overlord** (mid-boss) |
+| Final Porch | 148–210 | waves → **Porchlight Tyrant** (final) |
+
+Defeating a mid-boss shows **STAGE CLEAR** and resumes the run. Only the Tyrant ends the game in victory.
 
 ## Player
 

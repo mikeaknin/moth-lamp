@@ -814,9 +814,212 @@ const ENEMY_FN = {
 };
 
 // ═══════════════════════════════════════════════════════════
-// BOSS 64×48 — Porchlight Tyrant, 3 phase frames
+// STAGE BOSSES — hand-authored NES silhouettes (no ellipse fills)
+// boss_briar 48×40 · boss_neon 48×40 · boss_tyrant 64×48
 // ═══════════════════════════════════════════════════════════
-function bossFrame(f) {
+
+/** Briar Colossus — dense NES beetle boss (armor plates + thorns) */
+function bossBriar(f) {
+  const bob = f === 1 ? 1 : 0;
+  const rage = f === 2;
+  const O = out;
+  const D = hex('#2c1810');
+  const M = hex('#5d4037');
+  const L = hex('#8d6e63');
+  const H = hex('#d7ccc8');
+  const G = hex('#1b5e20');
+  const g = hex('#43a047');
+  const t = hex('#33691e');
+  const e = hex('#ffee58');
+  const i = hex('#ffffff');
+  const R = hex('#c62828');
+  const c = canvas(48, 40);
+
+  // Solid dome shell — stepped NES armor (not soft ellipse gradient)
+  const shell = [
+    // y relative, half-widths per row
+    [4, 8],
+    [5, 12],
+    [6, 14],
+    [7, 16],
+    [8, 17],
+    [9, 18],
+    [10, 18],
+    [11, 19],
+    [12, 19],
+    [13, 19],
+    [14, 19],
+    [15, 18],
+    [16, 18],
+    [17, 17],
+    [18, 16],
+    [19, 15],
+    [20, 13],
+    [21, 11],
+    [22, 9],
+    [23, 6],
+  ];
+  for (const [yy, half] of shell) {
+    const y = yy + bob;
+    for (let dx = -half; dx <= half; dx++) {
+      const x = 24 + dx;
+      const edge = Math.abs(dx) >= half - 1 || yy === 4 || yy === 23;
+      const ridge = yy === 10 || yy === 16;
+      let col = M;
+      if (edge) col = O;
+      else if (ridge) col = D;
+      else if (yy < 9) col = L;
+      else if (yy < 12) col = H;
+      else if (yy > 19) col = D;
+      put(c, x, y, col);
+    }
+  }
+  // Center armor crest
+  for (let y = 8; y <= 18; y++) {
+    put(c, 24, y + bob, D);
+    put(c, 23, y + bob, L);
+    put(c, 25, y + bob, L);
+  }
+  // Eyes in sockets
+  for (const ex of [17, 29]) {
+    put(c, ex, 12 + bob, O);
+    put(c, ex + 1, 12 + bob, O);
+    put(c, ex + 2, 12 + bob, O);
+    put(c, ex, 13 + bob, O);
+    put(c, ex + 1, 13 + bob, e);
+    put(c, ex + 2, 13 + bob, i);
+    put(c, ex, 14 + bob, O);
+    put(c, ex + 1, 14 + bob, O);
+    put(c, ex + 2, 14 + bob, O);
+  }
+  // Mandibles
+  for (let i2 = 0; i2 < 5; i2++) {
+    put(c, 13 - i2, 18 + bob + Math.floor(i2 / 2), i2 === 0 ? O : D);
+    put(c, 12 - i2, 19 + bob + Math.floor(i2 / 2), M);
+    put(c, 34 + i2, 18 + bob + Math.floor(i2 / 2), i2 === 0 ? O : D);
+    put(c, 35 + i2, 19 + bob + Math.floor(i2 / 2), M);
+  }
+  // Legs (6)
+  for (const lx of [12, 16, 20, 28, 32, 36]) {
+    put(c, lx, 24 + bob, O);
+    put(c, lx, 25 + bob, D);
+    put(c, lx, 26 + bob, t);
+    put(c, lx, 27 + bob, G);
+    put(c, lx + (lx < 24 ? -1 : 1), 28 + bob, g);
+  }
+  // Thorn crown
+  const spikes = [
+    [16, 3],
+    [20, 2],
+    [24, 1],
+    [28, 2],
+    [32, 3],
+  ];
+  for (const [sx, sy] of spikes) {
+    put(c, sx, sy + bob, O);
+    put(c, sx, sy + 1 + bob, rage ? R : t);
+    put(c, sx, sy + 2 + bob, G);
+    put(c, sx, sy + 3 + bob, g);
+  }
+  if (rage) {
+    put(c, 18, 9 + bob, R);
+    put(c, 30, 9 + bob, R);
+    put(c, 24, 8 + bob, R);
+  }
+  return c;
+}
+
+/** Neon Overlord — dense purple body + speech crown */
+function bossNeon(f) {
+  const flap = f % 2;
+  const rage = f === 2;
+  const O = out;
+  const D = hex('#311b92');
+  const M = hex('#7e57c2');
+  const L = hex('#d1c4e9');
+  const Y = hex('#fff59d');
+  const y = hex('#f9a825');
+  const e = hex('#18ffff');
+  const i = hex('#ffffff');
+  const P = hex('#ff4081');
+  const W = hex('#b39ddb');
+  const c = canvas(48, 40);
+
+  // Speech bubble crown
+  for (let yy = 1; yy <= 10; yy++) {
+    for (let xx = 8; xx <= 39; xx++) {
+      const edge = yy === 1 || yy === 10 || xx === 8 || xx === 39;
+      put(c, xx, yy, edge ? y : Y);
+    }
+  }
+  // Bubble tail
+  put(c, 22, 11, y);
+  put(c, 21, 12, y);
+  put(c, 20, 13, y);
+  // !! pixels
+  for (const bx of [16, 20]) {
+    put(c, bx, 3, D);
+    put(c, bx, 4, D);
+    put(c, bx, 5, D);
+    put(c, bx, 6, D);
+    put(c, bx, 8, D);
+  }
+  put(c, 28, 3, P);
+  put(c, 29, 4, P);
+  put(c, 30, 5, P);
+  put(c, 31, 6, P);
+  put(c, 28, 8, P);
+
+  // Body (solid stepped oval)
+  for (let yy = 14; yy <= 30; yy++) {
+    const half = yy < 17 ? 8 + (yy - 14) : yy > 26 ? 10 - (yy - 26) : 11;
+    for (let dx = -half; dx <= half; dx++) {
+      const x = 24 + dx;
+      const edge = Math.abs(dx) >= half - 1 || yy === 14 || yy === 30;
+      let col = M;
+      if (edge) col = O;
+      else if (yy < 18) col = L;
+      else if (yy > 26) col = D;
+      put(c, x, yy, col);
+    }
+  }
+  // Eyes
+  for (const ex of [18, 28]) {
+    put(c, ex, 19, O);
+    put(c, ex + 1, 19, e);
+    put(c, ex + 2, 19, i);
+    put(c, ex, 20, O);
+    put(c, ex + 1, 20, e);
+    put(c, ex + 2, 20, O);
+  }
+  // Wings
+  const wy = 15 + flap;
+  for (let i2 = 0; i2 < 11; i2++) {
+    put(c, 5 + i2, wy, O);
+    put(c, 6 + i2, wy + 1, W);
+    put(c, 6 + i2, wy + 2, L);
+    put(c, 42 - i2, wy, O);
+    put(c, 41 - i2, wy + 1, W);
+    put(c, 41 - i2, wy + 2, L);
+  }
+  // Legs
+  put(c, 18, 31, O);
+  put(c, 18, 32, D);
+  put(c, 29, 31, O);
+  put(c, 29, 32, D);
+  if (rage) {
+    put(c, 17, 17, P);
+    put(c, 18, 18, P);
+    put(c, 30, 17, P);
+    put(c, 29, 18, P);
+  }
+  return c;
+}
+
+/** Porchlight Tyrant — final boss, 64×48, lamp heart, 3 phases */
+function bossTyrant(f) {
+  const wingDrop = f === 0 ? 0 : f === 1 ? 1 : 2;
+  const rage = f === 2;
   const pal = {
     O: out,
     D: hex('#0d1448'),
@@ -825,29 +1028,28 @@ function bossFrame(f) {
     H: hex('#9fa8da'),
     W: hex('#151b54'),
     w: hex('#3949ab'),
+    s: hex('#283593'),
     G: hex('#fff176'),
     g: hex('#ffca28'),
-    e: f === 2 ? hex('#ff5252') : hex('#18ffff'),
+    e: rage ? hex('#ff5252') : hex('#18ffff'),
     i: hex('#ffffff'),
     R: hex('#ff5252'),
-    s: hex('#283593'),
+    a: hex('#ff8a80'),
   };
-  // Body built from map — not an ellipse fill
   const rows = [
-    '................................................................',
     '................................................................',
     '..............WWWWWW..................WWWWWW....................',
     '..........WWWWWwwwWWW..............WWWwwwWWWWW..................',
     '........WWWwwwssswwwWWW..........WWWwwwssswwwWWW................',
     '......WWWwwsssssssswwWWW........WWWwwsssssssswwWWW..............',
-    '.....WWwwssssssssssswwWW........WWwwssssssssssswwWW.............',
-    '....WWwsssssssssssssswWW........WWwsssssssssssssswWW............',
-    '....WWssssssssssssssssWW........WWssssssssssssssssWW............',
-    '....WWssssssssssssssssWW........WWssssssssssssssssWW............',
-    '.....WWssssssssssssssWW..........WWssssssssssssssWW.............',
-    '......WWwwsssssssswwWW............WWwwsssssssswwWW..............',
-    '.......WWWwwsssswwwWW..............WWWwwsssswwwWW...............',
-    '..........WWWWWWWW....................WWWWWWWW..................',
+    '.....WWwwssHHHHHHssswwWW........WWwwssHHHHHHssswwWW.............',
+    '....WWwssHHLLLLLLHHsswWW........WWwssHHLLLLLLHHsswWW............',
+    '....WWssHHLLLLLLLLHHssWW........WWssHHLLLLLLLLHHssWW............',
+    '....WWssHLLLLLLLLLLHssWW........WWssHLLLLLLLLLLHssWW............',
+    '.....WWssHLLLLLLLLHssWW..........WWssHLLLLLLLLHssWW.............',
+    '......WWwwssHHHHHHsswwWW..........WWwwssHHHHHHsswwWW............',
+    '.......WWWwwsssssswwwWW............WWWwwsssssswwwWW.............',
+    '..........WWWWWWWWWW..................WWWWWWWWWW................',
     '...............OOOOOOOOOOOOOOOOOOOOOO...........................',
     '.............OODDDMMMMMMMMMMMMMMDDDOO...........................',
     '...........OODDMMMMHHHHHHHHHHMMMMDDOO...........................',
@@ -882,28 +1084,37 @@ function bossFrame(f) {
     '................................................................',
     '................................................................',
     '................................................................',
+    '................................................................',
   ];
-  const c = fromMap(rows, pal);
-  // phase 2/3 wing lower
-  if (f >= 1) {
-    for (let i = 0; i < 12; i++) {
-      put(c, 4 + i, 14 + (i % 3), pal.W);
-      put(c, 59 - i, 14 + (i % 3), pal.W);
-      put(c, 5 + i, 15 + (i % 3), pal.w);
-      put(c, 58 - i, 15 + (i % 3), pal.s);
+  const c = fromMap(
+    rows.map((r) => r.padEnd(64, '.').slice(0, 64)).slice(0, 48),
+    pal,
+  );
+  // Wing flutter offset
+  if (wingDrop > 0) {
+    for (let i = 0; i < 14; i++) {
+      put(c, 3 + i, 13 + wingDrop + (i % 2), pal.W);
+      put(c, 60 - i, 13 + wingDrop + (i % 2), pal.W);
+      put(c, 4 + i, 14 + wingDrop, pal.w);
+      put(c, 59 - i, 14 + wingDrop, pal.s);
     }
   }
-  if (f === 2) {
-    // rage marks
-    put(c, 22, 17, pal.R);
-    put(c, 23, 18, pal.R);
-    put(c, 40, 17, pal.R);
-    put(c, 39, 18, pal.R);
-    // brighter gem pulse
-    put(c, 31, 26, pal.i);
-    put(c, 32, 26, pal.i);
+  if (rage) {
+    put(c, 22, 16, pal.R);
+    put(c, 23, 17, pal.a);
+    put(c, 40, 16, pal.R);
+    put(c, 39, 17, pal.a);
+    put(c, 31, 25, pal.i);
+    put(c, 32, 25, pal.i);
+    put(c, 31, 26, pal.G);
+    put(c, 32, 26, pal.G);
   }
   return c;
+}
+
+function bossFrame(f) {
+  // legacy alias → tyrant
+  return bossTyrant(f);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1703,7 +1914,13 @@ for (const e of Object.keys(ENEMY_FN)) {
   for (let f = 0; f < 2; f++) save(`enemy_${e}_${f}`, ENEMY_FN[e](f));
 }
 
-for (let f = 0; f < 3; f++) save(`boss_${f}`, bossFrame(f));
+// Stage bosses (3 zones × 3 frames) + legacy boss_N → tyrant
+for (let f = 0; f < 3; f++) {
+  save(`boss_briar_${f}`, bossBriar(f));
+  save(`boss_neon_${f}`, bossNeon(f));
+  save(`boss_tyrant_${f}`, bossTyrant(f));
+  save(`boss_${f}`, bossTyrant(f));
+}
 for (let f = 0; f < 5; f++) save(`boom_${f}`, boom(f));
 
 save('bullet_player', bulletPlayer());

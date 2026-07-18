@@ -1075,35 +1075,87 @@ select {
   max-height: min(90dvh, 100%);
   overflow: auto;
   background: #0a0618;
+  /* Classic NES double-frame: white inner, cyan outer, black drop */
   border: 4px solid #f5f0ff;
   border-radius: 0;
-  padding: 18px 14px 14px;
+  padding: 22px 14px 14px;
   box-shadow:
+    inset 0 0 0 2px #1a1440,
     0 0 0 4px #0a0618,
-    0 0 0 6px #6ec6ff,
+    0 0 0 7px #6ec6ff,
+    0 0 0 9px #0a0618,
     6px 6px 0 #000;
   image-rendering: pixelated;
+}
+
+.nes-box-frame {
+  pointer-events: none;
+  position: absolute;
+  inset: 4px;
+  border: 2px solid #2a2150;
+  box-shadow: inset 0 0 0 1px rgba(24, 255, 255, 0.08);
 }
 
 .nes-box-wide {
   width: min(440px, 100%);
 }
 
+/* Outcome-specific frames */
+.nes-box-gameover {
+  border-color: #ff8a80;
+  box-shadow:
+    inset 0 0 0 2px #3a1020,
+    0 0 0 4px #0a0618,
+    0 0 0 7px #ff5252,
+    0 0 0 9px #0a0618,
+    6px 6px 0 #000;
+}
+.nes-box-gameover .nes-box-title-inner {
+  border-color: #ff5252;
+  color: #ff8a80;
+}
+.nes-box-gameover .nes-box-corners .c {
+  background: #ff5252;
+}
+
+.nes-box-victory {
+  border-color: #fff176;
+  box-shadow:
+    inset 0 0 0 2px #3a3010,
+    0 0 0 4px #0a0618,
+    0 0 0 7px #ffca28,
+    0 0 0 9px #0a0618,
+    6px 6px 0 #000;
+}
+.nes-box-victory .nes-box-title-inner {
+  border-color: #ffca28;
+  color: #fff176;
+}
+.nes-box-victory .nes-box-corners .c {
+  background: #fff176;
+}
+
+.nes-box-pause .nes-box-title-inner {
+  border-color: #18ffff;
+  color: #18ffff;
+}
+
 /* title plate on top border */
 .nes-box-title {
   position: absolute;
-  top: -12px;
+  top: -14px;
   left: 12px;
   right: 12px;
   display: flex;
   justify-content: center;
   pointer-events: none;
+  z-index: 3;
 }
 
 .nes-box-title-inner {
   background: #0a0618;
   color: #fff176;
-  padding: 4px 12px;
+  padding: 6px 14px;
   border: 3px solid #6ec6ff;
   font-size: clamp(9px, 2.5vw, 11px);
   text-shadow: 2px 2px 0 #000;
@@ -1112,13 +1164,16 @@ select {
 }
 
 .nes-box-body {
-  margin-top: 6px;
+  position: relative;
+  z-index: 2;
+  margin-top: 8px;
 }
 
 .nes-box-corners {
   pointer-events: none;
   position: absolute;
   inset: 0;
+  z-index: 3;
 }
 
 .nes-box-corners .c {
@@ -1130,20 +1185,42 @@ select {
 }
 
 .nes-box-corners .tl {
-  top: 2px;
-  left: 2px;
+  top: 6px;
+  left: 6px;
 }
 .nes-box-corners .tr {
-  top: 2px;
-  right: 2px;
+  top: 6px;
+  right: 6px;
 }
 .nes-box-corners .bl {
-  bottom: 2px;
-  left: 2px;
+  bottom: 6px;
+  left: 6px;
 }
 .nes-box-corners .br {
-  bottom: 2px;
-  right: 2px;
+  bottom: 6px;
+  right: 6px;
+}
+
+.nes-banner.win {
+  color: #fff176;
+  animation: none;
+}
+.nes-banner.lose {
+  color: #ff8a80;
+  animation: press-blink 1.2s steps(1) infinite;
+}
+
+.nes-stat-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nes-btn-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
 }
 
 /* Legacy .panel aliases → NES box look */

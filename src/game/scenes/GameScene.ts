@@ -8,7 +8,7 @@ import {
   getMedal,
   type SectionId,
 } from '../data/balance';
-import { WAVE_TIMELINE } from '../data/enemies';
+import { STAGE_BOSSES, WAVE_TIMELINE } from '../data/enemies';
 import {
   POWERUP_DROP_CHANCE,
   POWERUP_DROP_WEIGHTS,
@@ -69,7 +69,10 @@ export class GameScene extends Phaser.Scene {
   private tutorial = false;
   private tutorialText?: Phaser.GameObjects.Text;
   private sectionBanner?: Phaser.GameObjects.Text;
-  private bossSpawned = false;
+  /** True while any stage boss is in play (pauses waves) */
+  private bossFight = false;
+  /** Index into STAGE_BOSSES — next boss to spawn */
+  private nextBossIndex = 0;
   private glowDropChance = 0.22;
   private lastMusic: 'level' | 'boss' = 'level';
   private scrollSpeed = SCROLL.baseSpeed as number;
@@ -122,7 +125,8 @@ export class GameScene extends Phaser.Scene {
     this.enemiesDestroyed = 0;
     this.damageTaken = 0;
     this.powerupsCollected = 0;
-    this.bossSpawned = false;
+    this.bossFight = false;
+    this.nextBossIndex = 0;
     this.scrollSpeed = SCROLL.baseSpeed;
     this.worldX = 0;
     this.paused = false;
@@ -275,14 +279,19 @@ export class GameScene extends Phaser.Scene {
       return true;
     });
 
-    // waves
-    if (!this.tutorial && !this.bossSpawned) {
+    // waves (paused during boss fights)
+    if (!this.tutorial && !this.bossFight) {
       this.spawnWaves(profile.spawnRateMult, profile.enemySpeedMult, profile.enemyHpMult);
     }
 
-    // boss
-    if (!this.tutorial && this.elapsed >= SECTIONS.boss.start && !this.bossSpawned) {
-      this.spawnBoss(profile.enemyHpMult);
+    // stage bosses — one at end of each zone
+    if (
+      !this.tutorial &&
+      !this.bossFight &&
+      this.nextBossIndex < STAGE_BOSSES.length &&
+      this.elapsed >= STAGE_BOSSES[this.nextBossIndex].t
+    ) {
+      this.spawnBoss(STAGE_BOSSES[this.nextBossIndex], profile.enemyHpMult);
     }
 
     if (this.boss?.alive) {
@@ -298,15 +307,7 @@ export class GameScene extends Phaser.Scene {
         this.juice.shake(0.004, 50);
         audioEngine.sfxHit();
         if (killed) {
-          this.scores.addRaw(SCORE.bossKill, profile.scoreMult);
-          this.enemiesDestroyed += 1;
-          this.bigBoom(this.boss!.x, this.boss!.y);
-          this.juice.ringBurst(this.boss!.x, this.boss!.y, 0xfff176);
-          this.juice.shake(0.012, 400);
-          this.juice.flash(255, 220, 80, 200);
-          audioEngine.sfxExplosion();
-          this.showSectionBanner('LAMP SECURED');
-          this.time.delayedCall(1100, () => this.endRun('victory'));
+          this.onBossKilled(profile.scoreMult);
         }
       });
       this.physics.overlap(this.boss, this.player, () => {
@@ -481,19 +482,26 @@ export class GameScene extends Phaser.Scene {
     enemy.onDeath = (e) => this.onEnemyKilled(e);
   }
 
-  private spawnBoss(hpMult: number): void {
-    this.bossSpawned = true;
+  private spawnBoss(def: (typeof STAGE_BOSSES)[number], hpMult: number): void {
+    this.bossFight = true;
     this.scrollSpeed = 0;
-    // clear minor enemies gently
     this.enemies.getChildren().forEach((c) => {
       const e = c as Enemy;
       if (e.alive) e.kill(false);
     });
+    this.enemyBullets.getChildren().forEach((c) => {
+      const b = c as Bullet;
+      if (b.active) b.kill();
+    });
+    if (this.boss) {
+      this.boss.destroy();
+      this.boss = null;
+    }
     this.boss = new Boss(this);
-    this.boss.spawn(hpMult);
+    this.boss.spawn(def, hpMult);
     this.boss.onShoot = (pattern) => this.bossShoot(pattern);
     this.boss.onPhaseChange = (phase, name) => {
-      this.showSectionBanner(`Phase ${phase}: ${name}`);
+      this.showSectionBanner(`PHASE ${phase}: ${name.toUpperCase()}`);
       this.juice.shake(0.008, 180);
       this.juice.flash(phase === 3 ? 80 : 40, 20, 80, 100);
       this.juice.ringBurst(this.boss!.x, this.boss!.y, phase === 3 ? 0xff4081 : 0xfff176);
@@ -504,10 +512,53 @@ export class GameScene extends Phaser.Scene {
     this.boss.onDefeated = () => {
       /* handled in overlap */
     };
-    this.world.setSection('boss');
+    this.world.setSection(def.section === 'boss' ? 'boss' : def.section);
     audioEngine.playMusic('boss');
     this.lastMusic = 'boss';
-    this.showSectionBanner('PORCHLIGHT TYRANT');
+    this.showSectionBanner(def.banner);
+  }
+
+  private onBossKilled(scoreMult: number): void {
+    if (!this.boss) return;
+    const wasFinal = this.boss.isFinal;
+    const killScore = this.boss.killScore || SCORE.bossKill;
+    this.scores.addRaw(killScore, scoreMult);
+    this.enemiesDestroyed += 1;
+    this.bigBoom(this.boss.x, this.boss.y);
+    this.juice.ringBurst(this.boss.x, this.boss.y, 0xfff176);
+    this.juice.shake(0.012, 400);
+    this.juice.flash(255, 220, 80, 200);
+    audioEngine.sfxExplosion();
+
+    this.nextBossIndex += 1;
+    this.bossFight = false;
+
+    if (wasFinal) {
+      this.showSectionBanner('LAMP SECURED');
+      this.time.delayedCall(1100, () => this.endRun('victory'));
+      return;
+    }
+
+    this.showSectionBanner('STAGE CLEAR!');
+    this.juice.floatText(GAME.width / 2, 70, 'STAGE CLEAR', '#fff176');
+    this.scrollSpeed =
+      this.nextBossIndex === 1
+        ? SCROLL.alleySpeed
+        : this.nextBossIndex === 2
+          ? SCROLL.porchSpeed
+          : SCROLL.baseSpeed;
+    this.spawnPickup(this.boss.x, this.boss.y, 'glow');
+    audioEngine.playMusic('level');
+    this.lastMusic = 'level';
+    if (this.nextBossIndex === 1) {
+      this.section = 'alley';
+      this.world.setSection('alley');
+      this.time.delayedCall(900, () => this.showSectionBanner(SECTIONS.alley.name));
+    } else if (this.nextBossIndex === 2) {
+      this.section = 'porch';
+      this.world.setSection('porch');
+      this.time.delayedCall(900, () => this.showSectionBanner(SECTIONS.porch.name));
+    }
   }
 
   private firePlayer(angles: number[], pierce: boolean): void {

@@ -23,7 +23,9 @@ export class SpriteFactory {
     if (need('web')) this.webHazard(scene);
     if (need('power_spread')) this.powerups(scene);
     if (need('enemy_gnat_0')) this.enemies(scene);
-    if (need('boss_0')) this.boss(scene);
+    if (need('boss_tyrant_0') || need('boss_0') || need('boss_briar_0') || need('boss_neon_0')) {
+      this.boss(scene);
+    }
     if (need('spark')) this.particles(scene);
     if (need('stars')) this.bgTiles(scene);
     if (need('porch_lamp')) this.lamp(scene);
@@ -607,100 +609,74 @@ export class SpriteFactory {
 
   private static boss(scene: Phaser.Scene): void {
     const OUT = '#0a0618';
+    // Runtime fallbacks if PNGs missing — prefer preloaded hand sprites
+    const ensure = (key: string, w: number, h: number, draw: (put: (x: number, y: number, c: string) => void) => void) => {
+      if (!scene.textures.exists(key)) this.tex(scene, key, w, h, (_ctx, put) => draw(put));
+    };
     for (let f = 0; f < 3; f++) {
-      this.tex(scene, `boss_${f}`, 64, 56, (_ctx, put) => {
-        const body = '#1a237e';
-        const mid = '#303f9f';
-        const light = '#5c6bc0';
-        const shell = '#3949ab';
-        const wing = '#151b54';
-        const wingL = '#283593';
-        const glow = this.H(PALETTE.lampCore);
-        const glow2 = this.H(PALETTE.lampHalo);
-        const eye = f === 2 ? this.H(PALETTE.danger) : this.H(PALETTE.neonCyan);
-        const eyeW = '#ffffff';
-
-        // Wings (animated)
-        const wy = 16 + f;
-        for (let i = 0; i < 16; i++) {
-          const y = wy + (i % 4);
-          put(2 + i, y, OUT);
-          put(3 + i, y + 1, wing);
-          put(4 + i, y + 2, wingL);
-          put(61 - i, y, OUT);
-          put(60 - i, y + 1, wing);
-          put(59 - i, y + 2, wingL);
+      // Briar — brown armored block
+      ensure(`boss_briar_${f}`, 48, 40, (put) => {
+        for (let y = 6; y < 30; y++) {
+          for (let x = 8; x < 40; x++) {
+            const cx = x - 24;
+            const cy = y - 17;
+            if ((cx * cx) / 180 + (cy * cy) / 100 > 1) continue;
+            put(x, y, y < 12 ? '#a1887f' : y > 22 ? '#3e2723' : '#6d4c41');
+          }
         }
-
-        // Main carapace
-        for (let y = 12; y < 44; y++) {
-          for (let x = 14; x < 50; x++) {
+        put(16, 14, '#ffee58');
+        put(30, 14, '#ffee58');
+        put(16, 4 + (f % 2), '#2e7d32');
+        put(24, 3 + (f % 2), '#2e7d32');
+        put(32, 4 + (f % 2), '#2e7d32');
+      });
+      // Neon — purple + bubble
+      ensure(`boss_neon_${f}`, 48, 40, (put) => {
+        for (let y = 2; y < 10; y++) for (let x = 10; x < 38; x++) put(x, y, y === 2 || y === 9 ? '#f9a825' : '#fff59d');
+        for (let y = 14; y < 30; y++) {
+          for (let x = 14; x < 34; x++) {
+            const cx = x - 24;
+            const cy = y - 21;
+            if ((cx * cx) / 90 + (cy * cy) / 70 > 1) continue;
+            put(x, y, '#7e57c2');
+          }
+        }
+        put(18, 18, '#18ffff');
+        put(28, 18, '#18ffff');
+        put(8 + f, 16, '#d1c4e9');
+        put(39 - f, 16, '#d1c4e9');
+      });
+      ensure(`boss_tyrant_${f}`, 64, 48, (put) => {
+        // minimal tyrant fallback
+        for (let y = 10; y < 40; y++) {
+          for (let x = 18; x < 46; x++) {
             const cx = x - 32;
-            const cy = y - 28;
-            const e = (cx * cx) / 220 + (cy * cy) / 160;
-            if (e > 1.05) continue;
-            if (e > 0.9) {
-              put(x, y, OUT);
-              continue;
-            }
-            const lit = -cx * 0.15 - cy * 0.5;
-            let col = mid;
-            if (e < 0.35) col = light;
-            else if (lit > 0.8) col = shell;
-            else if (lit < -1) col = body;
-            else col = mid;
-            put(x, y, col);
+            const cy = y - 24;
+            if ((cx * cx) / 180 + (cy * cy) / 140 > 1) continue;
+            put(x, y, '#1a237e');
           }
         }
-
-        // Armor ridges
-        for (let x = 18; x <= 45; x++) {
-          put(x, 16, body);
-          put(x, 34, body);
-        }
-
-        // Eyes with sockets
-        for (let y = 20; y <= 25; y++) {
-          for (let x = 20; x <= 26; x++) put(x, y, OUT);
-          for (let x = 37; x <= 43; x++) put(x, y, OUT);
-        }
-        for (let y = 21; y <= 24; y++) {
-          for (let x = 21; x <= 25; x++) put(x, y, eye);
-          for (let x = 38; x <= 42; x++) put(x, y, eye);
-        }
-        put(22, 22, eyeW);
-        put(39, 22, eyeW);
-
-        // Lamp heart gem
-        for (let y = 26; y <= 33; y++) {
-          for (let x = 28; x <= 35; x++) {
-            const cx = x - 31.5;
-            const cy = y - 29.5;
-            if (cx * cx + cy * cy < 16) put(x, y, OUT);
-            if (cx * cx + cy * cy < 11) put(x, y, glow2);
-            if (cx * cx + cy * cy < 6) put(x, y, glow);
+        put(22, 20, f === 2 ? '#ff5252' : '#18ffff');
+        put(40, 20, f === 2 ? '#ff5252' : '#18ffff');
+        put(31, 28, '#fff176');
+        put(32, 28, '#fff176');
+      });
+      ensure(`boss_${f}`, 64, 48, (put) => {
+        // legacy alias fallback → tyrant silhouette
+        for (let y = 10; y < 40; y++) {
+          for (let x = 18; x < 46; x++) {
+            const cx = x - 32;
+            const cy = y - 24;
+            if ((cx * cx) / 180 + (cy * cy) / 140 > 1) continue;
+            put(x, y, '#1a237e');
           }
         }
-        put(30, 28, '#ffffff');
-        put(31, 28, '#ffffff');
-
-        // Mandibles
-        put(24, 38, OUT);
-        put(23, 39, body);
-        put(22, 40, mid);
-        put(39, 38, OUT);
-        put(40, 39, body);
-        put(41, 40, mid);
-
-        // Phase 3 rage cracks
-        if (f === 2) {
-          put(26, 18, this.H(PALETTE.danger));
-          put(27, 19, this.H(PALETTE.danger));
-          put(36, 18, this.H(PALETTE.danger));
-          put(35, 19, this.H(PALETTE.danger));
-        }
+        put(22, 20, '#18ffff');
+        put(40, 20, '#18ffff');
+        put(31, 28, '#fff176');
       });
     }
+    void OUT;
   }
 
   private static particles(scene: Phaser.Scene): void {
